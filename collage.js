@@ -8,6 +8,8 @@ window.uiCollage = (function(){
 	var _self = this;
 	var canvas = document.getElementById("uiCollage");
    	var context = canvas.getContext('2d');
+   	var uiMenu = document.getElementById("uiCollageMenu");
+   	var uiMenuBackgrounds = document.getElementById("uiBackgroundsList");
 	var width = 600;
 	var height = 600;
 	var formats = {};
@@ -26,8 +28,8 @@ window.uiCollage = (function(){
 			{type:"image", name:"Design 1", url:"assets/bg/bg1.png"},
 			{type:"image", name:"Design 2", url:"assets/bg/bg2.png"},
 			{type:"image", name:"Design 3", url:"assets/bg/bg3.png"},
-			{type:"image", name:"Black", url:"assets/bg/bg4.png"},
-			{type:"image", name:"White", url:"assets/bg/bg5.png"}
+			{type:"image", name:"White", url:"assets/bg/bg5.png"},
+			{type:"image", name:"Black", url:"assets/bg/bg4.png"}
 		];
 
 	var layoutLib = [];
@@ -71,6 +73,8 @@ window.uiCollage = (function(){
 		loadAssets();
 
 		images = new Array(currentLayout.sections.length);
+
+		createBackgroundsMenu();
 
 		//Use for ui feedback for canvas "hover" interactions on objects
 		canvas.addEventListener('mousemove', function(evt) {
@@ -135,7 +139,11 @@ window.uiCollage = (function(){
 
 	}
 
-	function changeBackground(){
+	//==================================
+	// Change Background
+	// 
+	//==================================
+	function changeBackground(background){
 		currentBackground=(currentBackground==assets.length-1)?0:currentBackground+1;
 	}
 
@@ -372,6 +380,35 @@ window.uiCollage = (function(){
 			addAsset(assets[i]);
 		}
 	}
+
+	//==================================
+	//
+	//==================================
+	function createBackgroundsMenu(){
+		for(var i = 0; i < assetLib["backgrounds"].length; i++){
+			var _scope = this;
+			var item = assetLib["backgrounds"][i];
+			console.log("listbg", item);
+			var bItem = document.createElement("div");
+			bItem.dataset.rel = i; //data attribute??
+			bItem.dataset.name = item.name;
+			bItem.appendChild(item.img);
+
+			uiMenuBackgrounds.appendChild(bItem);
+
+			bItem.onclick = (function(bItem){return function(){
+				console.log("menu click", bItem.dataset);
+				currentBackground = bItem.dataset.rel;
+				draw();
+			}})(bItem);
+
+
+		}
+	}
+
+	//==================================
+	//
+	//==================================
 
 
 	return {
