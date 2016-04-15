@@ -21,24 +21,26 @@ window.uiCollage = (function(){
 	this.assetsFailed = 0;
 	this.totalAssets = 0;
 	var frmStorage = document.getElementById("uiCollageData");
-	var assetLib = 
-		[
-			{type:"image", name:"bg1", url:"assets/bg/bg1.png"},
-			{type:"image", name:"bg2", url:"assets/bg/bg2.png"},
-			{type:"image", name:"bg3", url:"assets/bg/bg3.png"}
+	var assetLib = [];
+		assetLib["backgrounds"] = [
+			{type:"image", name:"Design 1", url:"assets/bg/bg1.png"},
+			{type:"image", name:"Design 2", url:"assets/bg/bg2.png"},
+			{type:"image", name:"Design 3", url:"assets/bg/bg3.png"},
+			{type:"image", name:"Black", url:"assets/bg/bg4.png"},
+			{type:"image", name:"White", url:"assets/bg/bg5.png"}
 		];
-	var layoutLib =
-		[
-			{name:"Default 4", 
+
+	var layoutLib = [];
+		layoutLib["Default"] = {
 			sections:[
 					[27,26, 296,25, 296,575, 26,575],
 					[317,26, 586,25, 586,198, 316,198],
 					[317,403, 586,402, 586,575, 316,575],
 					[317,215, 586,214, 586,387, 316,387]
 				]
-			}
-		];
-	var currentLayout = 0;
+			};
+
+	var currentLayout = layoutLib["Default"];
 	var currentBackground = 2;
 	var assetBag;
 
@@ -54,22 +56,39 @@ window.uiCollage = (function(){
 	}, false);
 
 
-	addAssets(assetLib); // load assets - TODO finish dispatch event when assets loaded to start app
+	addAssets(assetLib["backgrounds"]); // load assets - TODO finish dispatch event when assets loaded to start app
 	assetBag = assets;
 
-	canvas.addEventListener('mousemove', function(evt) {
+
+
+	//==================================
+	// INIT
+	//==================================
+	function init(){
+
+		canvas.width=width;
+		canvas.height=height;
+		loadAssets();
+
+		images = new Array(currentLayout.sections.length);
+
+		//Use for ui feedback for canvas "hover" interactions on objects
+		canvas.addEventListener('mousemove', function(evt) {
 		
-		mousePosition = getMousePos(canvas, evt);
-		_self.inpoly=inPolygon(mousePosition);
+			mousePosition = getMousePos(canvas, evt);
+			_self.inpoly=inPolygon(mousePosition); //set index of polygon mouse is over
+	
+			draw();
 		
-		draw();
-		
-	});
+		});
+	
+	}
+
 
 	function inPolygon(mousePosition){
 		
-		for (var i=0; i<layoutLib[0].sections.length; i++){
-			if(pnpoly2(layoutLib[0].sections[i], mousePosition.x, mousePosition.y)){
+		for (var i=0; i<currentLayout.sections.length; i++){
+			if(pnpoly2(currentLayout.sections[i], mousePosition.x, mousePosition.y)){
 				return i;
 				
 			}
@@ -86,18 +105,7 @@ window.uiCollage = (function(){
         };
       }
 
-	//==================================
-	// INIT
-	//==================================
-	function init(){
 
-		canvas.width=width;
-		canvas.height=height;
-		loadAssets();
-
-		images = new Array(layoutLib[currentLayout].sections.length);
-	
-	}
 
 	//==================================
 	// INIT
@@ -143,7 +151,7 @@ window.uiCollage = (function(){
 		frmStorage.appendChild(newFrmItem);
 
 		newFrmItem.onchange = function(){
-			console.log("changed");
+			//console.log("changed");
 	        if (this.files && this.files[0]) {
 	            var reader = new FileReader();
 	            reader.onload = uiCollage.applyImage;
@@ -167,21 +175,21 @@ window.uiCollage = (function(){
 		drawTile(assets[currentBackground]);
 
 		//draw images
-		for(var i=0; i<layoutLib[0].sections.length;i++){
+		for(var i=0; i<currentLayout.sections.length;i++){
 			context.save();
 			context.fillStyle = "rgba(255,255,255,0.35)";
 			
 				context.beginPath();
-			    context.moveTo(layoutLib[0].sections[i][0], layoutLib[0].sections[i][1]); // top left
+			    context.moveTo(currentLayout.sections[i][0], currentLayout.sections[i][1]); // top left
 			    
-			    for(var x=2;x<layoutLib[0].sections[i].length;x++)
-			    	context.lineTo(layoutLib[0].sections[i][x],layoutLib[0].sections[i][++x]); // top right
+			    for(var x=2;x<currentLayout.sections[i].length;x++)
+			    	context.lineTo(currentLayout.sections[i][x],currentLayout.sections[i][++x]); // top right
 			    
-			    //context.lineTo(layoutLib[0].sections[i][0], layoutLib[0].sections[i][1]);
+			    //context.lineTo(currentLayout.sections[i][0], currentLayout.sections[i][1]);
 
 			    context.closePath();
 
-			    console.log("inpoly",inpoly,i);
+			    //console.log("inpoly",inpoly,i);
 			    if(inpoly==i){
 			    	context.strokeStyle = '#b4da55';
 			    	context.lineWidth = 5;
@@ -193,7 +201,7 @@ window.uiCollage = (function(){
 
 			    
 			if(images[i]){	
-				drawImageScaleCenter(images[i], getVectorSize(layoutLib[0].sections[i]));
+				drawImageScaleCenter(images[i], getPolygonSize(currentLayout.sections[i]));
 			}
 
   					
@@ -203,10 +211,10 @@ window.uiCollage = (function(){
 	}
 
 	//==================================
-	// getVectorSize
-	// returns object with width, height, bounds of vector
+	// getPolygonSize
+	// returns object with width, height, bounds of polygon
 	//==================================
-	function getVectorSize(vector){
+	function getPolygonSize(vector){
 		var maxX = vector[0];
 		var minX = vector[0];
 		var maxY = vector[1];
@@ -243,11 +251,11 @@ window.uiCollage = (function(){
 	// repeat an image across the canvas
 	//==================================
 	function drawTile(asset){
-		console.log("draw tiles", asset.img);
+		//console.log("draw tiles", asset.img);
 		if(asset.img!='undefined'){
 			var cols = Math.ceil(canvas.width/asset.img.width);
 			var rows = Math.ceil(canvas.height/asset.img.height);
-			console.log("drawtiles", cols,rows);
+			//console.log("drawtiles", cols,rows);
 
 			for (var i=0;i<rows;i++){
 	      		for (var j=0;j<cols;j++){
@@ -273,10 +281,13 @@ window.uiCollage = (function(){
 		context.drawImage(img, bounds.minX+shiftX,bounds.minY+shiftY, img.width*ratio, img.height*ratio);  
 	}
 
+	//==================================
+	// PNPOLY
 	/*//https://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
-	nvert - Number of vertices in the polygon. Whether to repeat the first vertex at the end is discussed below.
+	nvert - Number of vertices in the polygon.
 	vertx, verty - Arrays containing the x- and y-coordinates of the polygon's vertices.
 	testx, testy - X- and y-coordinate of the test point.*/
+	//==================================
 	function pnpoly( nvert, vertx, verty, testx, testy ) {
 	    var i, j, c = false;
 	    for( i = 0, j = nvert-1; i < nvert; j = i++ ) {
@@ -288,8 +299,12 @@ window.uiCollage = (function(){
 	    return c;
 	}
 
+	//==================================
+	// INIT
+	// polygon - array of alternating x,y coordinates
+	//==================================
 	function pnpoly2( polygon, testx, testy ) {
-	    var i, j, c = false;
+	    //var i, j, c = false;
 	    var vertx = [];
 	    var verty = [];
 	    nvert = polygon.length/2;
@@ -298,16 +313,14 @@ window.uiCollage = (function(){
 	    	verty.push(polygon[i]);
 	    }
 
-	    for( i = 0, j = nvert-1; i < nvert; j = i++ ) {
-	        if( ( ( verty[i] > testy ) != ( verty[j] > testy ) ) &&
-	            ( testx < ( vertx[j] - vertx[i] ) * ( testy - verty[i] ) / ( verty[j] - verty[i] ) + vertx[i] ) ) {
-	                c = !c;
-	        }
-	    }
-	    return c;
+	    return pnpoly(polygon.length, vertx, verty, testx, testy);
 	}
 
-
+	//==================================
+	// loadAssets
+	// load the collection of assets - 
+	// rudimentary way to ensure certain assets are loaded before starting app
+	//==================================
 	function loadAssets(){
 		_scope = this;
 		//console.log("assets", assets);
@@ -322,9 +335,10 @@ window.uiCollage = (function(){
 				tmpImg.onload = function(_scope){
 					
 					assetsLoaded++;
-					console.log("asset loaded", _ref.name, assetsLoaded, " / ", assets.length);
+					//console.log("asset loaded", _ref.name, assetsLoaded, " / ", assets.length);
 					//all assets loaded?
 					if(assetsLoaded == assets.length){
+						//console.log("all assets loaded", assetLib);
 						start();
 					}
 				
@@ -334,16 +348,25 @@ window.uiCollage = (function(){
 		}
 	}
 
+	//==================================
+	// addAsset
+	// 
+	//==================================
 	function addAsset (asset){
 		var asset = asset;
 		if(asset.name != 'undefined' && asset.url.length>0){
 			assets.push(asset);
-			//assets[asset.name]=asset;
+			//assets[asset.name]=asset; // better to use references in assetLib[]
 			totalAssets++;
 		}else{
-			console.log("asset info incorrect");
+			//console.log("asset info incorrect");
 		}
 	}
+
+	//==================================
+	// addAssets
+	// Iterate array of assets
+	//==================================
 	function addAssets(assets){
 		for(i=0;i<assets.length;i++){
 			addAsset(assets[i]);
@@ -353,8 +376,7 @@ window.uiCollage = (function(){
 
 	return {
 		"init":init,
-		"applyImage":applyImage,
-		"draw":draw
+		"applyImage":applyImage
 	}
 
 })();
